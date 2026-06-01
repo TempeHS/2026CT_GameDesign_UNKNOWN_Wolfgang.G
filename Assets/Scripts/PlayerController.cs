@@ -1,4 +1,7 @@
 using UnityEngine;
+using System.Collections;
+using System;
+
 
 public class PlayerController : MonoBehaviour
 {
@@ -16,12 +19,24 @@ public class PlayerController : MonoBehaviour
     private float delayedJumpTimeCounter;
     private float jumpBufferCounter;
     private bool jumpHeld;
+    private bool jumpConsumed; // prevents double-apply
+
+    // Dash
+    public float dashSpeed = 10;
+    public float dashCooldown = 1f;
+    public float dashDuration = 0.5f;
+    private float dashDirection;
 
     // Checks
     public Transform groundCheck;
+    public Transform groundCheck2;
     public float groundCheckRadius = 0.25f;
     public LayerMask groundLayer;
     private bool isGrounded;
+    private bool facingRight = true;
+    public bool canDash;
+    public bool isDashing;
+
 
     // Input
     private float moveInput;
@@ -31,16 +46,24 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        canDash = true;
     }
 
     void Update()
     {
-        moveInput = Input.GetAxisRaw("Horizontal"); 
+        moveInput = Input.GetAxisRaw("Horizontal");
 
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
-        if (isGrounded)
+        bool groundedA = groundCheck != null &&
+                     Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+        bool groundedB = groundCheck2 != null &&
+                     Physics2D.OverlapCircle(groundCheck2.position, groundCheckRadius, groundLayer);
+
+        isGrounded = groundedA || groundedB;
+
+        if (isGrounded && rb.linearVelocity.y <= 0.01f)
         {
             delayedJumpTimeCounter = delayedJumpTime;
+            jumpConsumed = false;
         }
         else
         {
@@ -62,32 +85,84 @@ public class PlayerController : MonoBehaviour
         }
 
         jumpHeld = Input.GetButton("Jump");
+
+        if (Input.GetKeyDown(KeyCode.LeftShift) && canDash)
+        {
+            StartCoroutine(Dash());
+        }
+
+        if (moveInput > 0 && !facingRight)
+        {
+            Flip();
+        }   
+        else if (moveInput < 0 && facingRight)
+        {
+            Flip();
+        }
+
+        if (facingRight == true)
+        {
+            dashDirection = 1;
+        } else if (facingRight == false)
+        {
+            dashDirection = -1;
+        }
+    }
+    
+    IEnumerator Dash()
+    {
+        isDashing = true;
+        canDash = false;
+        // When damage is set up, make player invincible
+        rb.linearVelocity = new Vector2(dashDirection * dashSpeed, rb.linearVelocity.y);
+        yield return new WaitForSeconds(dashDuration);
+        isDashing = false;
+        // When damage is set up, remove invincibility
+        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+        yield return new WaitForSeconds(dashCooldown);
+        canDash = true;
     }
 
     private void FixedUpdate()
     {
+        if (isDashing)
+        {
+            return;
+        }
+
         float targetSpeed = moveInput * moveSpeed;
         float accelRate = isGrounded ? (Mathf.Abs(targetSpeed) > 0.01f ? acceleration : deceleration)
                                      : (Mathf.Abs(targetSpeed) > 0.01f ? airAcceleration : airDeceleration);
 
-        float speedDiff = targetSpeed - rb.linearVelocity.x; 
+        float speedDiff = targetSpeed - rb.linearVelocity.x;
         float movement = speedDiff * accelRate * Time.fixedDeltaTime;
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x + movement, rb.linearVelocity.y); 
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x + movement, rb.linearVelocity.y);
 
-        if (jumpBufferCounter > 0 && delayedJumpTimeCounter > 0)
+        if (jumpBufferCounter > 0 && delayedJumpTimeCounter > 0 && !jumpConsumed)
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce); 
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
             jumpBufferCounter = 0;
             delayedJumpTimeCounter = 0;
+            jumpConsumed = true;
         }
     }
 
     void OnDrawGizmosSelected()
     {
+        Gizmos.color = Color.red;
+
         if (groundCheck != null)
-        {
-            Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
-        }
+
+        if (groundCheck2 != null)
+            Gizmos.DrawWireSphere(groundCheck2.position, groundCheckRadius);
+    }
+
+    private void Flip()
+    {
+        facingRight = !facingRight;
+        Vector3 scaler = transform.localScale;
+        scaler.x *= -1;
+        transform.localScale = scaler;
     }
 }
