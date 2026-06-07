@@ -15,7 +15,6 @@
     "ms-dotnettools.vscode-dotnet-runtime",
     "oderwat.indent-rainbow",
     "pixl.unity-toolbox",
-    "streetsidesoftware.code-spell-checker",
     "unity.unity-debug",
     "vscode-icons-team.vscode-icons",
     "visualstudiotoolsforunity.unity-pack",
@@ -23,6 +22,7 @@
     "saeris.markdown-github-alerts",
     "oderwat.indent-rainbow",
     "streetsidesoftware.code-spell-checker",
-    "tal7aouy.icons"
+    "streetsidesoftware.code-spell-checker-british-english",
+    "yusifaliyevpro.vscicons"
   ]
 }
