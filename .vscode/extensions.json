@@ -2,7 +2,6 @@
   "recommendations": [
     "bierner.markdown-mermaid",
     "bierner.markdown-preview-github-styles",
-    "CoenraadS.bracket-pair-colorizer-2",
     "csharpier.csharpier-vscode",
     "eamodio.gitlens",
     "GitHub.codespaces",
@@ -16,7 +15,6 @@
     "oderwat.indent-rainbow",
     "pixl.unity-toolbox",
     "unity.unity-debug",
-    "vscode-icons-team.vscode-icons",
     "visualstudiotoolsforunity.unity-pack",
     "visualstudiotoolsforunity.vstuc",
     "saeris.markdown-github-alerts",
