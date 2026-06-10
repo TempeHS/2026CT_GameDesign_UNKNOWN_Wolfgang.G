@@ -48,7 +48,7 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         canDash = true;
 
-        rb.interpolation = RigidbodyInterpolation2D.Interpolate; // smoother visual movement
+        rb.interpolation = RigidbodyInterpolation2D.Interpolate;
     }
 
     void Update()
@@ -133,11 +133,10 @@ public class PlayerController : MonoBehaviour
         }
 
         float targetSpeed = moveInput * moveSpeed;
-        float accelRate = isGrounded
-            ? (Mathf.Abs(targetSpeed) > 0.01f ? acceleration : deceleration)
-            : (Mathf.Abs(targetSpeed) > 0.01f ? airAcceleration : airDeceleration);
+        float accelRate = isGrounded 
+                ? (Mathf.Abs(targetSpeed) > 0.01f ? acceleration : deceleration)
+                : (Mathf.Abs(targetSpeed) > 0.01f ? airAcceleration : airDeceleration);
 
-        // Prevents overshoot/oscillation jitter
         float newX = Mathf.MoveTowards(rb.linearVelocity.x, targetSpeed, accelRate * Time.fixedDeltaTime);
         rb.linearVelocity = new Vector2(newX, rb.linearVelocity.y);
 
