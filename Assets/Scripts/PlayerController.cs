@@ -19,7 +19,7 @@ public class PlayerController : MonoBehaviour
     private float delayedJumpTimeCounter;
     private float jumpBufferCounter;
     private bool jumpHeld;
-    private bool jumpConsumed; // prevents double-apply
+    private bool jumpConsumed;  
 
     // Dash
     public float dashSpeed = 10;
@@ -27,15 +27,25 @@ public class PlayerController : MonoBehaviour
     public float dashDuration = 0.5f;
     private float dashDirection;
 
+    // Attack
+    [Range(0f, 360f)] public float attackArcAngle = 180f;
+    
+
     // Checks
     public Transform groundCheck;
     public Transform groundCheck2;
     public float groundCheckRadius = 0.25f;
     public LayerMask groundLayer;
+    public Transform attackPoint;
+    public LayerMask attackLayer;
+    public float attackRange = 1.2f;
     private bool isGrounded;
     private bool facingRight = true;
+    private bool isAttacking;
+    private bool isDashing;
     public bool canDash;
-    public bool isDashing;
+
+    
 
 
     // Input
@@ -61,6 +71,12 @@ public class PlayerController : MonoBehaviour
                      Physics2D.OverlapCircle(groundCheck2.position, groundCheckRadius, groundLayer);
 
         isGrounded = groundedA || groundedB;
+
+        bool attackingCheck = attackPoint != null &&
+                     Physics2D.OverlapCircle(attackPoint.position, attackRange, attackLayer);
+
+        isAttacking = attackingCheck;
+
 
         if (isGrounded && rb.linearVelocity.y <= 0.01f)
         {
