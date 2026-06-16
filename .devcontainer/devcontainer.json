@@ -1,0 +1,102 @@
+{
+    "name": "TempeHS Unity DevContainer",
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu26.04",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "files.exclude": {
+                    "**/.classpath": true,
+                    "**/.factorypath": true,
+                    "**/.project": true,
+                    "**/.settings": true,
+                    "**/.vscode": false,
+                    "**/.vs": true,
+                    "**/build": true,
+                    "**/Library": true,
+                    "**/Temp": true,
+                    "**/Obj": true,
+                    "**/Logs": true,
+                    "**/UserSettings": true
+                },
+                "files.watcherExclude": {
+                    "**/Library/**": true,
+                    "**/Temp/**": true,
+                    "**/Obj/**": true,
+                    "**/build/**": true,
+                    "**/.git/objects/**": true,
+                    "**/.git/subtree-cache/**": true,
+                    "**/UserSettings/**": true
+                },
+                "editor.fontSize": 16,
+                "editor.formatOnSave": true,
+                "editor.codeActionsOnSave": {
+                    "source.fixAll": true
+                },
+                "editor.tabSize": 4,
+                "editor.insertSpaces": true,
+                "editor.rulers": [
+                    100
+                ],
+                "editor.snippetSuggestions": "top",
+                "editor.bracketPairColorization.enabled": true,
+                "editor.guides.bracketPairs": true,
+                "editor.guides.highlightActiveBracketPair": true,
+                "workbench.colorCustomizations": {
+                    "editorBracketHighlight.foreground1": "#FFD700",
+                    "editorBracketHighlight.foreground2": "#DA70D6",
+                    "editorBracketHighlight.foreground3": "#87CEFA",
+                    "editorBracketHighlight.foreground4": "#FFA500",
+                    "editorBracketHighlight.foreground5": "#7CFC00",
+                    "editorBracketHighlight.foreground6": "#FF69B4",
+                    "editorBracketHighlight.unexpectedBracket.foreground": "#FF0000"
+                },
+                "C_Cpp.updateChannel": "Insiders",
+                "csharp.format.enable": true,
+                "csharp.suppressDotnetInstallWarning": true,
+                "csharp.enableDecompilationSupport": true,
+                "omnisharp.useModernNet": true,
+                "omnisharp.enableRoslynAnalyzers": true,
+                "omnisharp.enableEditorConfigSupport": true,
+                "omnisharp.enableMsBuildLoadProjectsOnDemand": true,
+                "omnisharp.loggingLevel": "information",
+                "omnisharp.maxProjectFileCountForDiagnosticAnalysis": 1000,
+                "csharp.showReferencesCodeLens": true,
+                "workbench.iconTheme": "vscode-icons",
+                "workbench.colorTheme": "Dark+",
+                "window.restoreWindows": "preserve",
+                "explorer.compactFolders": false,
+                "terminal.integrated.defaultProfile.windows": "Command Prompt",
+                "github.copilot.enable": {
+                    "*": true,
+                    "csharp": false
+                },
+                "chat.agent.enabled": false,
+                "dotnet.completion.showCompletionItemsFromUnimportedNamespaces": true,
+                "dotnet.codeLens.enableReferencesCodeLens": true,
+                "dotnet.codeLens.enableTestsCodeLens": true,
+                "dotnet.formatting.organizeImportsOnFormat": true
+            },
+            "extensions": [
+                "bierner.markdown-mermaid",
+                "bierner.markdown-preview-github-styles",
+                "csharpier.csharpier-vscode",
+                "eamodio.gitlens",
+                "GitHub.codespaces",
+                "ironcutter24.cscurly",
+                "kreativ-software.csharpextensions",
+                "mathematic.vscode-pdf",
+                "McCarter.start-git-bash",
+                "ms-dotnettools.csdevkit",
+                "ms-dotnettools.csharp",
+                "ms-dotnettools.vscode-dotnet-runtime",
+                "oderwat.indent-rainbow",
+                "visualstudiotoolsforunity.unity-pack",
+                "visualstudiotoolsforunity.vstuc",
+                "saeris.markdown-github-alerts",
+                "streetsidesoftware.code-spell-checker",
+                "streetsidesoftware.code-spell-checker-british-english",
+                "yusifaliyevpro.vscicons"
+            ]
+        }
+    }
+}
