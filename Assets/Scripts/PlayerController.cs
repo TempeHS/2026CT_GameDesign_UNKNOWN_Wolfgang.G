@@ -1,6 +1,7 @@
 using UnityEngine;
-using System.Collections;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 
 public class PlayerController : MonoBehaviour
@@ -29,6 +30,13 @@ public class PlayerController : MonoBehaviour
 
     // Attack
     [Range(0f, 360f)] public float attackArcAngle = 180f;
+    public float attackCooldown = 0.25f;
+    public float attackDuration = 0.08f;
+    public float whipLength = 2.0f;
+    public float whipRadius = 0.35f;
+    public int attackDamage = 1;
+    public GameObject whipParticlePrefab;
+    private float attackCooldownTimer;
     
 
     // Checks
@@ -50,14 +58,12 @@ public class PlayerController : MonoBehaviour
 
     // Input
     private float moveInput;
-
     private Rigidbody2D rb;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         canDash = true;
-
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
     }
 
@@ -72,11 +78,10 @@ public class PlayerController : MonoBehaviour
 
         isGrounded = groundedA || groundedB;
 
-        bool attackingCheck = attackPoint != null &&
-                     Physics2D.OverlapCircle(attackPoint.position, attackRange, attackLayer);
-
-        isAttacking = attackingCheck;
-
+        if (attackCooldownTimer >0f)
+            {
+                attackCooldownTimer -= Time.deltaTime;
+            }
 
         if (isGrounded && rb.linearVelocity.y <= 0.01f)
         {
@@ -125,6 +130,11 @@ public class PlayerController : MonoBehaviour
         {
             dashDirection = -1;
         }
+
+        if (Input.GetButtonDown("Fire1") && attackCooldownTimer <= 0f && !isDashing)
+            {
+                StartCoroutine(WhipAttack());
+            }
     }
     
     IEnumerator Dash()
@@ -139,6 +149,42 @@ public class PlayerController : MonoBehaviour
         rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
         yield return new WaitForSeconds(dashCooldown);
         canDash = true;
+    }
+
+    IEnumerator WhipAttack()
+    {
+        isAttacking = true;
+        attackCooldownTimer = attackCooldown;
+
+        Vector2 origin = attackPoint != null ? (Vector2)attackPoint.position : (Vector2)transform.position;
+        Vector2 direction = facingRight ? Vector2.right : Vector2.left;
+
+        if (whipParticlePrefab != null)
+        {
+            Vector3 spawnPos = (Vector3)origin + (Vector3)(direction * 0.35f);
+            Quaternion rot = facingRight ? Quaternion.identity : Quaternion.Euler(0f, 180f, 0f);
+            GameObject vfx = Instantiate(whipParticlePrefab, spawnPos, rot);
+            Destroy(vfx, 1.5f);
+
+            RaycastHit2D[] hits = Physics2D.CircleCastAll(origin, whipRadius, direction, whipLength, attackLayer);
+            HashSet<Collider2D> hitOnce = new HashSet<Collider2D>();
+        
+            foreach (RaycastHit2D hit in hits)
+            {
+                if (hit.collider == null || hit.collider.attachedRigidbody == rb)
+                    continue;
+
+                if (hitOnce.contains(hitcollider))
+                    continue;
+
+                hitOnce.Add(hit.collider);
+
+                hit.collider.gameObject.SendMessage("TakeDamage", attackDamage, SendMessageOptions.DontRequireReceiver);                
+            }
+
+            yield return new WaitForSeconds(attackDuration);
+            isAttacking = false;
+        }
     }
 
     private void FixedUpdate()
@@ -170,10 +216,26 @@ public class PlayerController : MonoBehaviour
         Gizmos.color = Color.red;
 
         if (groundCheck != null)
+        {
             Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+        }
 
         if (groundCheck2 != null)
+        {
             Gizmos.DrawWireSphere(groundCheck2.position, groundCheckRadius);
+        }
+
+        if (attackPoint != null)
+        {
+            Vector3 dir = facingRight ? Vector3.right : Vector3.left;
+            Vector3 start = attackPoint.position;
+            Vector3 end = start + dor * whipLength;
+
+            Gizmos.color = Color.Yellow;
+            Gizmos.DrawWireSphere(start, whipRadius);
+            Gizmos.DrawWireSphere(start, end);
+            Gizmos.DrawWireSphere(end, whipRadius);
+        }
     }
 
     private void Flip()
