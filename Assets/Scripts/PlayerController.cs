@@ -29,9 +29,8 @@ public class PlayerController : MonoBehaviour
     private float dashDirection;
 
     // Attack
-    [Range(0f, 360f)] public float attackArcAngle = 180f;
     public float attackCooldown = 0.25f;
-    public float attackDuration = 0.08f;
+    public float attackDuration = 1f;
     public float whipLength = 2.0f;
     public float whipRadius = 0.35f;
     public int attackDamage = 1;
@@ -164,7 +163,7 @@ public class PlayerController : MonoBehaviour
             Vector3 spawnPos = (Vector3)origin + (Vector3)(direction * 0.35f);
             Quaternion rot = facingRight ? Quaternion.identity : Quaternion.Euler(0f, 180f, 0f);
             GameObject vfx = Instantiate(whipParticlePrefab, spawnPos, rot);
-            Destroy(vfx, 1.5f);
+            Destroy(vfx, 0.05f);
 
             RaycastHit2D[] hits = Physics2D.CircleCastAll(origin, whipRadius, direction, whipLength, attackLayer);
             HashSet<Collider2D> hitOnce = new HashSet<Collider2D>();
@@ -174,7 +173,7 @@ public class PlayerController : MonoBehaviour
                 if (hit.collider == null || hit.collider.attachedRigidbody == rb)
                     continue;
 
-                if (hitOnce.contains(hitcollider))
+                if (hitOnce.Contains(hit.collider))
                     continue;
 
                 hitOnce.Add(hit.collider);
@@ -191,6 +190,12 @@ public class PlayerController : MonoBehaviour
     {
         if (isDashing)
         {
+            return;
+        }
+
+        if (isAttacking)
+        {
+            rb.linearVelocity = new Vector2 (0f, 0f);
             return;
         }
 
@@ -229,11 +234,11 @@ public class PlayerController : MonoBehaviour
         {
             Vector3 dir = facingRight ? Vector3.right : Vector3.left;
             Vector3 start = attackPoint.position;
-            Vector3 end = start + dor * whipLength;
+            Vector3 end = start + dir * whipLength;
 
-            Gizmos.color = Color.Yellow;
+            Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(start, whipRadius);
-            Gizmos.DrawWireSphere(start, end);
+            Gizmos.DrawLine(start, end);
             Gizmos.DrawWireSphere(end, whipRadius);
         }
     }
