@@ -34,7 +34,10 @@ public class PlayerController : MonoBehaviour
     public float whipLength = 2.0f;
     public float whipRadius = 0.35f;
     public int attackDamage = 1;
-    public GameObject whipParticlePrefab;
+    public GameObject whipParticlePrefab;      
+    public GameObject whipParticlePrefabUp;     
+    public GameObject whipParticlePrefabDown;   
+    [Range(0f, 1f)] public float attackMoveMultiplier = 0.35f; 
     private float attackCooldownTimer;
     public float attackInputThreshold = 0.5f;
     public bool allowDownAttackOnGround = false;
@@ -47,7 +50,9 @@ public class PlayerController : MonoBehaviour
     public Transform groundCheck2;
     public float groundCheckRadius = 0.25f;
     public LayerMask groundLayer;
-    public Transform attackPoint;
+    public Transform attackPoint;      
+    public Transform attackPointUp;     
+    public Transform attackPointDown;  
     public LayerMask attackLayer;
     public float attackRange = 1.2f;
     private bool isGrounded;
@@ -168,20 +173,46 @@ public class PlayerController : MonoBehaviour
         return facingRight ? Vector2.right : Vector2.left;
     }
 
+    private Vector2 GetAttackOrigin(Vector2 direction)
+    {
+        if (direction == Vector2.up && attackPointUp != null)
+            return attackPointUp.position;
+
+        if (direction == Vector2.down && attackPointDown != null)
+            return attackPointDown.position;
+
+        if (attackPoint != null)
+            return attackPoint.position;
+
+        return transform.position;
+    }
+
+    private GameObject GetAttackVfxPrefab(Vector2 direction)
+    {
+        if (direction == Vector2.up && whipParticlePrefabUp != null)
+            return whipParticlePrefabUp;
+
+        if (direction == Vector2.down && whipParticlePrefabDown != null)
+            return whipParticlePrefabDown;
+
+        return whipParticlePrefab;
+    }
+
     IEnumerator WhipAttack()
     {
         isAttacking = true;
         attackCooldownTimer = attackCooldown;
 
-        Vector2 origin = attackPoint != null ? (Vector2)attackPoint.position : (Vector2)transform.position;
         Vector2 direction = currentAttackDirection.normalized;
+        Vector2 origin = GetAttackOrigin(direction);
 
-        if (whipParticlePrefab != null)
+        GameObject selectedVfx = GetAttackVfxPrefab(direction);
+        if (selectedVfx != null)
         {
             Vector3 spawnPos = (Vector3)origin + (Vector3)(direction * 0.35f);
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
             Quaternion rot = Quaternion.Euler(0f, 0f, angle);
-            GameObject vfx = Instantiate(whipParticlePrefab, spawnPos, rot);
+            GameObject vfx = Instantiate(selectedVfx, spawnPos, rot);
             Destroy(vfx, 0.05f);
         }
 
@@ -191,18 +222,14 @@ public class PlayerController : MonoBehaviour
 
         foreach (RaycastHit2D hit in hits)
         {
-            if (hit.collider == null || hit.collider.attachedRigidbody == rb)
-                continue;
-
-            if (hitOnce.Contains(hit.collider))
-                continue;
+            if (hit.collider == null || hit.collider.attachedRigidbody == rb) continue;
+            if (hitOnce.Contains(hit.collider)) continue;
 
             hitOnce.Add(hit.collider);
             hitSomething = true;
             hit.collider.gameObject.SendMessage("TakeDamage", attackDamage, SendMessageOptions.DontRequireReceiver);
         }
 
-        // Downslash pogo
         if (enablePogoBounce && direction == Vector2.down && !isGrounded && hitSomething)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, pogoBounceForce);
@@ -214,21 +241,14 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (isDashing)
-        {
-            return;
-        }
+        if (isDashing) return;
 
-        if (isAttacking)
-        {
-            rb.linearVelocity = new Vector2 (0f, 0f);
-            return;
-        }
+        float moveScale = isAttacking ? attackMoveMultiplier : 1f;
+        float targetSpeed = moveInput * moveSpeed * moveScale;
 
-        float targetSpeed = moveInput * moveSpeed;
-        float accelRate = isGrounded 
-                ? (Mathf.Abs(targetSpeed) > 0.01f ? acceleration : deceleration)
-                : (Mathf.Abs(targetSpeed) > 0.01f ? airAcceleration : airDeceleration);
+        float accelRate = isGrounded
+            ? (Mathf.Abs(targetSpeed) > 0.01f ? acceleration : deceleration)
+            : (Mathf.Abs(targetSpeed) > 0.01f ? airAcceleration : airDeceleration);
 
         float newX = Mathf.MoveTowards(rb.linearVelocity.x, targetSpeed, accelRate * Time.fixedDeltaTime);
         rb.linearVelocity = new Vector2(newX, rb.linearVelocity.y);
@@ -258,20 +278,32 @@ public class PlayerController : MonoBehaviour
 
         if (attackPoint != null)
         {
-            Vector3 dir;
-            if (Application.isPlaying)
-                dir = (Vector3)(currentAttackDirection == Vector2.zero ? (facingRight ? Vector2.right : Vector2.left) : currentAttackDirection);
-            else
-                dir = facingRight ? Vector3.right : Vector3.left;
-
-            Vector3 start = attackPoint.position;
-            Vector3 end = start + dir.normalized * whipLength;
-
             Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(start, whipRadius);
-            Gizmos.DrawLine(start, end);
-            Gizmos.DrawWireSphere(end, whipRadius);
+            Gizmos.DrawWireSphere(attackPoint.position, whipRadius);
         }
+
+        if (attackPointUp != null)
+        {
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireSphere(attackPointUp.position, whipRadius);
+        }
+
+        if (attackPointDown != null)
+        {
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawWireSphere(attackPointDown.position, whipRadius);
+        }
+
+        Vector3 dir = Application.isPlaying
+            ? (Vector3)(currentAttackDirection == Vector2.zero ? (facingRight ? Vector2.right : Vector2.left) : currentAttackDirection)
+            : (facingRight ? Vector3.right : Vector3.left);
+
+        Vector3 start = GetAttackOrigin(dir.normalized);
+        Vector3 end = start + dir.normalized * whipLength;
+
+        Gizmos.color = Color.white;
+        Gizmos.DrawLine(start, end);
+        Gizmos.DrawWireSphere(end, whipRadius);
     }
 
     private void Flip()
