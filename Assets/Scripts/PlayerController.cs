@@ -31,9 +31,6 @@ public class PlayerController : MonoBehaviour
     // Attack
     public float attackCooldown = 0.25f;
     public float attackDuration = 1f;
-    public float whipLength = 2.0f;
-    public float whipRadius = 0.35f;
-    public int attackDamage = 1;
     public GameObject whipParticlePrefab;      
     public GameObject whipParticlePrefabUp;     
     public GameObject whipParticlePrefabDown;   
@@ -51,16 +48,11 @@ public class PlayerController : MonoBehaviour
     public Transform attackPoint;      
     public Transform attackPointUp;     
     public Transform attackPointDown;  
-    public LayerMask attackLayer;
-    public float attackRange = 1.2f;
     private bool isGrounded;
     private bool facingRight = true;
     private bool isAttacking;
     private bool isDashing;
     public bool canDash;
-
-    
-
 
     // Input
     private float moveInput;
@@ -84,10 +76,10 @@ public class PlayerController : MonoBehaviour
 
         isGrounded = groundedA || groundedB;
 
-        if (attackCooldownTimer >0f)
-            {
-                attackCooldownTimer -= Time.deltaTime;
-            }
+        if (attackCooldownTimer > 0f)
+        {
+            attackCooldownTimer -= Time.deltaTime;
+        }
 
         if (isGrounded && rb.linearVelocity.y <= 0.01f)
         {
@@ -121,21 +113,11 @@ public class PlayerController : MonoBehaviour
         }
 
         if (moveInput > 0 && !facingRight)
-        {
             Flip();
-        }   
         else if (moveInput < 0 && facingRight)
-        {
             Flip();
-        }
 
-        if (facingRight == true)
-        {
-            dashDirection = 1;
-        } else if (facingRight == false)
-        {
-            dashDirection = -1;
-        }
+        dashDirection = facingRight ? 1 : -1;
 
         if (Input.GetButtonDown("Fire1") && attackCooldownTimer <= 0f && !isDashing)
         {
@@ -148,11 +130,9 @@ public class PlayerController : MonoBehaviour
     {
         isDashing = true;
         canDash = false;
-        // When damage is set up, make player invincible
         rb.linearVelocity = new Vector2(dashDirection * dashSpeed, rb.linearVelocity.y);
         yield return new WaitForSeconds(dashDuration);
         isDashing = false;
-        // When damage is set up, remove invincibility
         rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
         yield return new WaitForSeconds(dashCooldown);
         canDash = true;
@@ -171,18 +151,15 @@ public class PlayerController : MonoBehaviour
         return facingRight ? Vector2.right : Vector2.left;
     }
 
-    private Vector2 GetAttackOrigin(Vector2 direction)
+    private Transform GetAttackPoint(Vector2 direction)
     {
         if (direction == Vector2.up && attackPointUp != null)
-            return attackPointUp.position;
+            return attackPointUp;
 
         if (direction == Vector2.down && attackPointDown != null)
-            return attackPointDown.position;
+            return attackPointDown;
 
-        if (attackPoint != null)
-            return attackPoint.position;
-
-        return transform.position;
+        return attackPoint;
     }
 
     private GameObject GetAttackVfxPrefab(Vector2 direction)
@@ -202,31 +179,14 @@ public class PlayerController : MonoBehaviour
         attackCooldownTimer = attackCooldown;
 
         Vector2 direction = currentAttackDirection.normalized;
-        Vector2 origin = GetAttackOrigin(direction);
+        Transform spawnPoint = GetAttackPoint(direction);
         GameObject selectedVfx = GetAttackVfxPrefab(direction);
-        if (selectedVfx != null)
+
+        if (selectedVfx != null && spawnPoint != null)
         {
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
             Quaternion rot = Quaternion.Euler(0f, 0f, angle);
-            GameObject vfx = Instantiate(selectedVfx, (Vector3)origin, rot);
-            Destroy(vfx, 0.05f);
-        }
-
-        // Cast from player position toward the attack point
-        Vector2 playerPos = transform.position;
-        Vector2 toAttackPoint = origin - playerPos;
-        float castDistance = toAttackPoint.magnitude;
-
-        RaycastHit2D[] hits = Physics2D.CircleCastAll(playerPos, whipRadius, toAttackPoint.normalized, castDistance, attackLayer);
-        HashSet<Collider2D> hitOnce = new HashSet<Collider2D>();
-
-        foreach (RaycastHit2D hit in hits)
-        {
-            if (hit.collider == null || hit.collider.attachedRigidbody == rb) continue;
-            if (hitOnce.Contains(hit.collider)) continue;
-
-            hitOnce.Add(hit.collider);
-            hit.collider.gameObject.SendMessage("TakeDamage", attackDamage, SendMessageOptions.DontRequireReceiver);
+            Instantiate(selectedVfx, spawnPoint.position, rot);
         }
 
         yield return new WaitForSeconds(attackDuration);
@@ -261,43 +221,28 @@ public class PlayerController : MonoBehaviour
         Gizmos.color = Color.red;
 
         if (groundCheck != null)
-        {
             Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
-        }
 
         if (groundCheck2 != null)
-        {
             Gizmos.DrawWireSphere(groundCheck2.position, groundCheckRadius);
-        }
 
         if (attackPoint != null)
         {
             Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(attackPoint.position, whipRadius);
+            Gizmos.DrawWireSphere(attackPoint.position, 0.2f);
         }
 
         if (attackPointUp != null)
         {
             Gizmos.color = Color.cyan;
-            Gizmos.DrawWireSphere(attackPointUp.position, whipRadius);
+            Gizmos.DrawWireSphere(attackPointUp.position, 0.2f);
         }
 
         if (attackPointDown != null)
         {
             Gizmos.color = Color.magenta;
-            Gizmos.DrawWireSphere(attackPointDown.position, whipRadius);
+            Gizmos.DrawWireSphere(attackPointDown.position, 0.2f);
         }
-
-        Vector3 dir = Application.isPlaying
-            ? (Vector3)(currentAttackDirection == Vector2.zero ? (facingRight ? Vector2.right : Vector2.left) : currentAttackDirection)
-            : (facingRight ? Vector3.right : Vector3.left);
-
-        Vector3 start = GetAttackOrigin(dir.normalized);
-        Vector3 end = start + dir.normalized * whipLength;
-
-        Gizmos.color = Color.white;
-        Gizmos.DrawLine(start, end);
-        Gizmos.DrawWireSphere(end, whipRadius);
     }
 
     private void Flip()
