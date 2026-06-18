@@ -36,7 +36,11 @@ public class PlayerController : MonoBehaviour
     public int attackDamage = 1;
     public GameObject whipParticlePrefab;
     private float attackCooldownTimer;
-    
+    public float attackInputThreshold = 0.5f;
+    public bool allowDownAttackOnGround = false;
+    public bool enablePogoBounce = true;
+    public float pogoBounceForce = 12f;
+    private Vector2 currentAttackDirection = Vector2.right;
 
     // Checks
     public Transform groundCheck;
@@ -131,9 +135,10 @@ public class PlayerController : MonoBehaviour
         }
 
         if (Input.GetButtonDown("Fire1") && attackCooldownTimer <= 0f && !isDashing)
-            {
-                StartCoroutine(WhipAttack());
-            }
+        {
+            currentAttackDirection = GetAttackDirection();
+            StartCoroutine(WhipAttack());
+        }
     }
     
     IEnumerator Dash()
@@ -150,40 +155,61 @@ public class PlayerController : MonoBehaviour
         canDash = true;
     }
 
+    private Vector2 GetAttackDirection()
+    {
+        float vertical = Input.GetAxisRaw("Vertical");
+
+        if (vertical > attackInputThreshold)
+            return Vector2.up;
+
+        if (vertical < -attackInputThreshold && (!isGrounded || allowDownAttackOnGround))
+            return Vector2.down;
+
+        return facingRight ? Vector2.right : Vector2.left;
+    }
+
     IEnumerator WhipAttack()
     {
         isAttacking = true;
         attackCooldownTimer = attackCooldown;
 
         Vector2 origin = attackPoint != null ? (Vector2)attackPoint.position : (Vector2)transform.position;
-        Vector2 direction = facingRight ? Vector2.right : Vector2.left;
+        Vector2 direction = currentAttackDirection.normalized;
 
         if (whipParticlePrefab != null)
         {
             Vector3 spawnPos = (Vector3)origin + (Vector3)(direction * 0.35f);
-            Quaternion rot = facingRight ? Quaternion.identity : Quaternion.Euler(0f, 180f, 0f);
+            float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+            Quaternion rot = Quaternion.Euler(0f, 0f, angle);
             GameObject vfx = Instantiate(whipParticlePrefab, spawnPos, rot);
             Destroy(vfx, 0.05f);
-
-            RaycastHit2D[] hits = Physics2D.CircleCastAll(origin, whipRadius, direction, whipLength, attackLayer);
-            HashSet<Collider2D> hitOnce = new HashSet<Collider2D>();
-        
-            foreach (RaycastHit2D hit in hits)
-            {
-                if (hit.collider == null || hit.collider.attachedRigidbody == rb)
-                    continue;
-
-                if (hitOnce.Contains(hit.collider))
-                    continue;
-
-                hitOnce.Add(hit.collider);
-
-                hit.collider.gameObject.SendMessage("TakeDamage", attackDamage, SendMessageOptions.DontRequireReceiver);                
-            }
-
-            yield return new WaitForSeconds(attackDuration);
-            isAttacking = false;
         }
+
+        RaycastHit2D[] hits = Physics2D.CircleCastAll(origin, whipRadius, direction, whipLength, attackLayer);
+        HashSet<Collider2D> hitOnce = new HashSet<Collider2D>();
+        bool hitSomething = false;
+
+        foreach (RaycastHit2D hit in hits)
+        {
+            if (hit.collider == null || hit.collider.attachedRigidbody == rb)
+                continue;
+
+            if (hitOnce.Contains(hit.collider))
+                continue;
+
+            hitOnce.Add(hit.collider);
+            hitSomething = true;
+            hit.collider.gameObject.SendMessage("TakeDamage", attackDamage, SendMessageOptions.DontRequireReceiver);
+        }
+
+        // Downslash pogo
+        if (enablePogoBounce && direction == Vector2.down && !isGrounded && hitSomething)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, pogoBounceForce);
+        }
+
+        yield return new WaitForSeconds(attackDuration);
+        isAttacking = false;
     }
 
     private void FixedUpdate()
@@ -232,9 +258,14 @@ public class PlayerController : MonoBehaviour
 
         if (attackPoint != null)
         {
-            Vector3 dir = facingRight ? Vector3.right : Vector3.left;
+            Vector3 dir;
+            if (Application.isPlaying)
+                dir = (Vector3)(currentAttackDirection == Vector2.zero ? (facingRight ? Vector2.right : Vector2.left) : currentAttackDirection);
+            else
+                dir = facingRight ? Vector3.right : Vector3.left;
+
             Vector3 start = attackPoint.position;
-            Vector3 end = start + dir * whipLength;
+            Vector3 end = start + dir.normalized * whipLength;
 
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(start, whipRadius);
