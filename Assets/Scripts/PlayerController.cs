@@ -203,20 +203,22 @@ public class PlayerController : MonoBehaviour
 
         Vector2 direction = currentAttackDirection.normalized;
         Vector2 origin = GetAttackOrigin(direction);
-
         GameObject selectedVfx = GetAttackVfxPrefab(direction);
         if (selectedVfx != null)
         {
-            Vector3 spawnPos = (Vector3)origin + (Vector3)(direction * 0.35f);
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
             Quaternion rot = Quaternion.Euler(0f, 0f, angle);
-            GameObject vfx = Instantiate(selectedVfx, spawnPos, rot);
+            GameObject vfx = Instantiate(selectedVfx, (Vector3)origin, rot);
             Destroy(vfx, 0.05f);
         }
 
-        RaycastHit2D[] hits = Physics2D.CircleCastAll(origin, whipRadius, direction, whipLength, attackLayer);
+        // Cast from player position toward the attack point
+        Vector2 playerPos = transform.position;
+        Vector2 toAttackPoint = origin - playerPos;
+        float castDistance = toAttackPoint.magnitude;
+
+        RaycastHit2D[] hits = Physics2D.CircleCastAll(playerPos, whipRadius, toAttackPoint.normalized, castDistance, attackLayer);
         HashSet<Collider2D> hitOnce = new HashSet<Collider2D>();
-        bool hitSomething = false;
 
         foreach (RaycastHit2D hit in hits)
         {
@@ -224,7 +226,6 @@ public class PlayerController : MonoBehaviour
             if (hitOnce.Contains(hit.collider)) continue;
 
             hitOnce.Add(hit.collider);
-            hitSomething = true;
             hit.collider.gameObject.SendMessage("TakeDamage", attackDamage, SendMessageOptions.DontRequireReceiver);
         }
 
