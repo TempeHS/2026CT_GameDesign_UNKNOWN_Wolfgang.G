@@ -48,6 +48,10 @@ public class PlayerController : MonoBehaviour
     public Transform attackPoint;      
     public Transform attackPointUp;     
     public Transform attackPointDown;  
+<<<<<<< Updated upstream
+=======
+    public LayerMask attackLayer;
+>>>>>>> Stashed changes
     private bool isGrounded;
     private bool facingRight = true;
     private bool isAttacking;
@@ -185,8 +189,31 @@ public class PlayerController : MonoBehaviour
         if (selectedVfx != null && spawnPoint != null)
         {
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+<<<<<<< Updated upstream
             Quaternion rot = Quaternion.Euler(0f, 0f, angle);
             Instantiate(selectedVfx, spawnPoint.position, rot);
+=======
+            Quaternion rot = Quaternion.Euler(0f, 0f, 0f);
+            GameObject vfx = Instantiate(selectedVfx, (Vector3)origin, rot);
+            Destroy(vfx, 0.05f);
+        }
+
+
+        Vector2 playerPos = transform.position;
+        Vector2 toAttackPoint = origin - playerPos;
+        float castDistance = toAttackPoint.magnitude;
+
+        RaycastHit2D[] hits = Physics2D.CircleCastAll(playerPos, whipRadius, toAttackPoint.normalized, castDistance, attackLayer);
+        HashSet<Collider2D> hitOnce = new HashSet<Collider2D>();
+
+        foreach (RaycastHit2D hit in hits)
+        {
+            if (hit.collider == null || hit.collider.attachedRigidbody == rb) continue;
+            if (hitOnce.Contains(hit.collider)) continue;
+
+            hitOnce.Add(hit.collider);
+            hit.collider.gameObject.SendMessage("TakeDamage", attackDamage, SendMessageOptions.DontRequireReceiver);
+>>>>>>> Stashed changes
         }
 
         yield return new WaitForSeconds(attackDuration);
