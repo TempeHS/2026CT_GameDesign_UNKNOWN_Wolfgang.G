@@ -41,8 +41,6 @@ public class PlayerController : MonoBehaviour
     private float attackCooldownTimer;
     public float attackInputThreshold = 0.5f;
     public bool allowDownAttackOnGround = false;
-    public bool enablePogoBounce = true;
-    public float pogoBounceForce = 12f;
     private Vector2 currentAttackDirection = Vector2.right;
 
     // Checks
@@ -228,11 +226,6 @@ public class PlayerController : MonoBehaviour
             hitOnce.Add(hit.collider);
             hitSomething = true;
             hit.collider.gameObject.SendMessage("TakeDamage", attackDamage, SendMessageOptions.DontRequireReceiver);
-        }
-
-        if (enablePogoBounce && direction == Vector2.down && !isGrounded && hitSomething)
-        {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, pogoBounceForce);
         }
 
         yield return new WaitForSeconds(attackDuration);
